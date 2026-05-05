@@ -3,128 +3,128 @@ import pandas as pd
 import altair as alt
 
 # Set page configuration
-st.set_page_config(page_title="Retail Analytics", layout="wide")
+st.set_page_config(page_title="Retail Analytics (Altair)", layout="wide")
 
 # Title
-st.title("📊 Validated Retail Dashboard")
-st.markdown("This version uses the exact column names found in your dataset with strict restrictions.")
+st.title("📊 Retail Dashboard with Altair")
+st.markdown("Analyzing `project1_df.csv` using declarative visualizations.")
 
-# --- DATA VALIDATION & CLEANING FUNCTION ---
+# Load and Clean Data
 @st.cache_data
-def load_and_validate_data():
+def load_data():
     try:
         df = pd.read_csv("project1_df.csv")
-        
-        # 1. gender: Restriction - Must be Capitalized (Male/Female/Unknown)
-        if 'gender' in df.columns:
-            df['gender'] = df['gender'].fillna('Unknown').str.capitalize().str.strip()
-
-        # 2. purchase_date: Restriction - Must be valid datetime
-        if 'purchase_date' in df.columns:
-            df['purchase_date'] = pd.to_datetime(df['purchase_date'], dayfirst=True, errors='coerce')
-            df = df.dropna(subset=['purchase_date'])
-
-        # 3. age_group: Restriction - Ensure it is treated as a Category
-        if 'age_group' in df.columns:
-            df['age_group'] = df['age_group'].astype(str).str.strip()
-
-        # 4. product_category: Restriction - Must be standard text
-        if 'product_category' in df.columns:
-            df['product_category'] = df['product_category'].astype(str).str.title().str.strip()
-
-        # 5. discount_availed: Restriction - Must be numeric >= 0
-        if 'discount_availed' in df.columns:
-            df['discount_availed'] = pd.to_numeric(df['discount_availed'], errors='coerce').fillna(0)
-            df['discount_availed'] = df['discount_availed'].apply(lambda x: x if x >= 0 else 0)
-
-        # NOTE: If net_amount or warehouse_block are missing, we create placeholders 
-        # or use discount_availed for visualization to prevent crashes.
-        return df
+        # Clean dates for time-series plotting
+        df['Purchase Date'] = pd.to_datetime(df['Purchase Date'], dayfirst=True, errors='coerce')
+        # Standardize Warehouse_block to Uppercase as per attribute restrictions
+        if 'Warehouse_block' in df.columns:
+            df['Warehouse_block'] = df['Warehouse_block'].astype(str).str.upper()
+        return df.dropna(subset=['Purchase Date'])
     except FileNotFoundError:
         return None
 
-df = load_and_validate_data()
+df = load_data()
 
 if df is not None:
-    # --- SIDEBAR: DATA RESTRICTIONS INFO ---
-    st.sidebar.header("📋 Data Restrictions")
-    with st.sidebar.expander("Active Constraints", expanded=True):
-        st.markdown("""
-        *   **gender:** Capitalized string.
-        *   **age_group:** Categorical string.
-        *   **purchase_date:** Valid DD-MM-YYYY.
-        *   **discount_availed:** Non-negative number.
-        """)
+    # --- SIDEBAR FILTERS & DATA CONSTRAINTS ---
+    st.sidebar.header("Filter & Data Info")
+    
+    # Information Box for critical attribute constraints
+    st.sidebar.info("""
+    **Attribute Restrictions:**
+    - **Warehouse_block:** Strictly uppercase alphabets only.
+    - **Net Amount:** Must be a positive numerical value.
+    """)
 
-    st.sidebar.divider()
-    st.sidebar.header("Filters")
-
-    # Filters based on your "Found Columns"
+    # Multi-select with hover-over help constraints
     selected_gender = st.sidebar.multiselect(
-        "Select Gender:", 
-        options=df["gender"].unique(), 
-        default=df["gender"].unique()
+        "Gender:", 
+        options=df["Gender"].unique(), 
+        default=df["Gender"].unique(),
+        help="Constraint: Valid entries are limited to 'Male', 'Female', or 'Unknown'."
     )
     
     selected_category = st.sidebar.multiselect(
-        "Select Category:", 
-        options=df["product_category"].unique(), 
-        default=df["product_category"].unique()
+        "Product Category:", 
+        options=df["Product Category"].unique(), 
+        default=df["Product Category"].unique(),
+        help="Constraint: Must align with the standardized product taxonomy."
     )
 
-    # Filtering Logic
+    # Additional attribute info in sidebar
+    with st.sidebar.expander("View Full Attribute Limits"):
+        st.write("""
+        - **Age Group:** Categorical (e.g., 18-24, 25-34).
+        - **Location:** Valid City names only.
+        - **Purchase Method:** 'Online' or 'In-Store'.
+        """)
+
+    # Apply Filters
     filtered_df = df[
-        (df["gender"].isin(selected_gender)) & 
-        (df["product_category"].isin(selected_category))
+        (df["Gender"].isin(selected_gender)) & 
+        (df["Product Category"].isin(selected_category))
     ]
 
-    # --- MAIN UI ---
+    # Handle empty filtered dataframe
     if filtered_df.empty:
-        st.warning("No data found for the selected filters.")
+        st.warning("No data matches the selected filters. Please adjust your criteria.")
     else:
-        # KPI Row
+        # --- KPI METRICS ---
+        total_sales = filtered_df["Net Amount"].sum()
+        avg_purchase = filtered_df["Net Amount"].mean()
+        
         col1, col2, col3 = st.columns(3)
-        col1.metric("Transaction Count", len(filtered_df))
-        if 'discount_availed' in filtered_df.columns:
-            col2.metric("Total Discounts", f"₹{filtered_df['discount_availed'].sum():,.0f}")
-            col3.metric("Avg Discount", f"₹{filtered_df['discount_availed'].mean():,.2f}")
+        col1.metric("Total Net Sales", f"₹{total_sales:,.0f}")
+        col2.metric("Average Transaction", f"₹{avg_purchase:,.2f}")
+        col3.metric("Transaction Count", len(filtered_df))
 
         st.divider()
 
-        # Charts using your actual columns
+        # --- ALTAIR CHARTS ---
         row1_col1, row1_col2 = st.columns(2)
 
         with row1_col1:
-            st.subheader("Distribution by Age Group")
-            age_chart = alt.Chart(filtered_df).mark_bar().encode(
-                x=alt.X("count():Q", title="Number of Transactions"),
-                y=alt.Y("age_group:N", sort='-x', title="Age Group"),
-                color="age_group:N",
-                tooltip=["age_group", "count()"]
-            ).properties(height=300)
-            st.altair_chart(age_chart, use_container_width=True)
+            st.subheader("Sales by Age Group")
+            bar_chart = alt.Chart(filtered_df).mark_bar().encode(
+                y=alt.Y("Age Group:N", sort='-x', title="Age Group"),
+                x=alt.X("sum(Net Amount):Q", title="Total Net Amount"),
+                color=alt.Color("Age Group:N", legend=None),
+                tooltip=["Age Group", "sum(Net Amount)"]
+            ).properties(height=300).interactive()
+            
+            st.altair_chart(bar_chart, use_container_width=True)
 
         with row1_col2:
-            st.subheader("Gender Split")
-            gender_chart = alt.Chart(filtered_df).mark_arc(innerRadius=50).encode(
-                theta=alt.Theta("count():Q"),
-                color=alt.Color("gender:N", title="Gender"),
-                tooltip=["gender", "count()"]
+            st.subheader("Location vs Purchase Method")
+            heatmap = alt.Chart(filtered_df).mark_rect().encode(
+                x=alt.X("Location:N", title="City"),
+                y=alt.Y("Purchase Method:N", title="Payment Method"),
+                color=alt.Color("count():Q", scale=alt.Scale(scheme='greens'), title="Count"),
+                tooltip=["Location", "Purchase Method", "count()"]
             ).properties(height=300)
-            st.altair_chart(gender_chart, use_container_width=True)
+            
+            st.altair_chart(heatmap, use_container_width=True)
 
-        st.subheader("Daily Transaction Volume")
+        st.subheader("Daily Sales Trend")
         line_chart = alt.Chart(filtered_df).mark_line(point=True).encode(
-            x=alt.X("yearmonthdate(purchase_date):T", title="Date"),
-            y=alt.Y("count():Q", title="Volume"),
-            color="product_category:N",
-            tooltip=["purchase_date", "product_category", "count()"]
+            x=alt.X("yearmonthdate(Purchase Date):T", title="Date"),
+            y=alt.Y("sum(Net Amount):Q", title="Daily Revenue"),
+            color=alt.Color("Product Category:N"),
+            tooltip=["yearmonthdate(Purchase Date)", "Product Category", "sum(Net Amount)"]
         ).properties(height=400).interactive()
+
         st.altair_chart(line_chart, use_container_width=True)
 
-        # Data Preview
-        with st.expander("View Validated Dataframe"):
+        # --- DATA PREVIEW & DOWNLOAD ---
+        with st.expander("View/Export Filtered Data"):
             st.dataframe(filtered_df.head(100), use_container_width=True)
+            csv = filtered_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Filtered CSV",
+                data=csv,
+                file_name='retail_data_export.csv',
+                mime='text/csv',
+            )
 
 else:
-    st.error("Missing `project1_df.csv`. Please upload the file.")
+    st.error("Error: 'project1_df.csv' not found. Please ensure the file is in the same directory as this script.")
