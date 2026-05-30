@@ -78,6 +78,58 @@ if df is not None:
         col2.metric("Average Transaction", f"₹{avg_purchase:,.2f}")
         col3.metric("Transaction Count", len(filtered_df))
 
+        # --- DATA VALIDITY REGISTRY ---
+        with st.expander("🔍 Data Validity & Measurement Registry"):
+            st.markdown("This registry tracks data compliance against baseline constraints and metadata rules.")
+            
+            total_records = len(filtered_df)
+            
+            # 1. Warehouse Block Uppercase Validation
+            if 'Warehouse_block' in filtered_df.columns:
+                valid_warehouse = filtered_df['Warehouse_block'].apply(lambda x: str(x).isupper() if pd.notnull(x) else False).sum()
+                warehouse_pct = (valid_warehouse / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_warehouse, warehouse_pct = 0, 0
+                
+            # 2. Net Amount Positive Validation
+            if 'Net Amount' in filtered_df.columns:
+                valid_net = (filtered_df['Net Amount'] > 0).sum()
+                net_pct = (valid_net / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_net, net_pct = 0, 0
+                
+            # 3. Gender Taxonomy Validation
+            if 'Gender' in filtered_df.columns:
+                valid_gender = filtered_df['Gender'].isin(['Male', 'Female', 'Unknown']).sum()
+                gender_pct = (valid_gender / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_gender, gender_pct = 0, 0
+
+            # 4. Purchase Date Integrity Validation
+            valid_dates = filtered_df['Purchase Date'].notna().sum()
+            date_pct = (valid_dates / total_records) * 100 if total_records > 0 else 0
+
+            # Compile Registry DataFrame
+            registry_data = {
+                "Metric / Attribute Rule": [
+                    "Warehouse_block Format (Strictly Uppercase)",
+                    "Net Amount Value Range (Positive > 0)",
+                    "Gender Taxonomy Taxonomy Compliance",
+                    "Purchase Date Temporal Presence"
+                ],
+                "Valid Records": [valid_warehouse, valid_net, valid_gender, valid_dates],
+                "Total Evaluated": [total_records, total_records, total_records, total_records],
+                "Validity Score": [f"{warehouse_pct:.2f}%", f"{net_pct:.2f}%", f"{gender_pct:.2f}%", f"{date_pct:.2f}%"],
+                "Status": [
+                    "🟢 Compliant" if warehouse_pct == 100 else "⚠️ Non-Compliant Rows Detected",
+                    "🟢 Compliant" if net_pct == 100 else "⚠️ Non-Compliant Rows Detected",
+                    "🟢 Compliant" if gender_pct == 100 else "⚠️ Non-Compliant Rows Detected",
+                    "🟢 Compliant" if date_pct == 100 else "⚠️ Missing Temporal Data"
+                ]
+            }
+            registry_df = pd.DataFrame(registry_data)
+            st.dataframe(registry_df, use_container_width=True, hide_index=True)
+
         st.divider()
 
         # --- ALTAIR CHARTS ---
