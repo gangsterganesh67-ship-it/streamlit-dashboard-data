@@ -34,7 +34,7 @@ if df is not None:
     **Core Variable Restrictions:**
     - **CID:** Present & Numeric ID.
     - **TID:** Positive Transaction ID.
-    - **Gender:** Male, Female, Other, Unknown.
+    - **Gender:** Strictly Male, Female, or Other.
     - **Age Group:** Categorical binned intervals.
     - **Purchase Date:** Valid temporal timestamp.
     - **Product Category:** Standard taxonomy string.
@@ -124,7 +124,6 @@ if df is not None:
         """)
 
     # --- APPLY SIDEBAR FILTERS ---
-    # Safe date evaluation
     if isinstance(selected_dates, tuple) and len(selected_dates) == 2:
         start_date, end_date = pd.to_datetime(selected_dates[0]), pd.to_datetime(selected_dates[1])
     else:
@@ -184,9 +183,9 @@ if df is not None:
             valid_tid = (filtered_df['TID'] > 0).sum() if 'TID' in filtered_df.columns else 0
             tid_pct = (valid_tid / total_records) * 100 if total_records > 0 else 0
 
-            # 3. Gender
+            # 3. Gender (Updated Restrictive Taxonomy Validation)
             if 'Gender' in filtered_df.columns:
-                valid_gender = filtered_df['Gender'].isin(['Male', 'Female', 'Other', 'Unknown']).sum()
+                valid_gender = filtered_df['Gender'].isin(['Male', 'Female', 'Other']).sum()
                 gender_pct = (valid_gender / total_records) * 100 if total_records > 0 else 0
             else:
                 valid_gender, gender_pct = 0, 0
@@ -301,7 +300,7 @@ if df is not None:
                 "Variable / Attribute Rule": [
                     "CID (Must be Present/Numeric)",
                     "TID (Must be Positive Transaction ID)",
-                    "Gender Taxonomy Compliance (Male/Female/Other/Unknown)",
+                    "Gender Taxonomy Compliance (Strictly Male/Female/Other)",
                     "Age Group Formats (Categorical Intervals)",
                     "Purchase Date Temporal Presence",
                     "Product Category Compliance (Valid Taxonomy)",
@@ -328,7 +327,7 @@ if df is not None:
                 "Status": [
                     "🟢 Compliant" if cid_pct == 100 else "⚠️ Missing CIDs",
                     "🟢 Compliant" if tid_pct == 100 else "⚠️ Corrupt TIDs Found",
-                    "🟢 Compliant" if gender_pct == 100 else "⚠️ Out-of-bounds Gender Value",
+                    "🟢 Compliant" if gender_pct == 100 else "⚠️ Invalid Gender Category Encountered",
                     "🟢 Compliant" if age_pct == 100 else "⚠️ Unexpected Age Category Format",
                     "🟢 Compliant" if date_pct == 100 else "⚠️ Missing Temporal Data",
                     "🟢 Compliant" if cat_pct == 100 else "⚠️ Missing Category Entries",
@@ -400,7 +399,6 @@ if df is not None:
                 st.dataframe(filtered_df.head(100), use_container_width=True)
             else:
                 st.markdown(f"Displaying data preview specifically for **{selected_var}**:")
-                # Display only the selected column vector
                 st.dataframe(filtered_df[[selected_var]].head(100), use_container_width=True)
                 
             # Global Export Actions
