@@ -286,5 +286,3 @@ if df is not None:
 
 else:
     st.error("Error: 'project1_df.csv' not found. Please ensure the file is in the same directory as this script.")
-
-```
