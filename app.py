@@ -305,12 +305,32 @@ if df is not None:
 
         st.altair_chart(line_chart, use_container_width=True)
 
-        # --- DATA PREVIEW & DOWNLOAD ---
-        with st.expander("View/Export Filtered Data"):
-            st.dataframe(filtered_df.head(100), use_container_width=True)
+        # --- DATA PREVIEW & VARIABLE INSPECTION ---
+        with st.expander("🔍 View/Export Filtered Data & Inspect Variables", expanded=False):
+            st.markdown("### 👁️ Individual Variable Viewer")
+            
+            # Generate column list from available variables
+            available_columns = list(filtered_df.columns)
+            
+            # Dropdown menu to view a specific column
+            selected_var = st.selectbox(
+                "Select a variable to isolate and inspect its contents:",
+                options=["All Columns Combined"] + available_columns
+            )
+            
+            # Render selected target data view
+            if selected_var == "All Columns Combined":
+                st.dataframe(filtered_df.head(100), use_container_width=True)
+            else:
+                st.markdown(f"Displaying data preview specifically for **{selected_var}**:")
+                # Display only the selected column vector
+                st.dataframe(filtered_df[[selected_var]].head(100), use_container_width=True)
+                
+            # Global Export Actions
+            st.markdown("---")
             csv = filtered_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="Download Filtered CSV",
+                label="📥 Download Full Filtered CSV",
                 data=csv,
                 file_name='retail_data_export.csv',
                 mime='text/csv',
