@@ -92,7 +92,8 @@ if df is not None:
 
         # --- DATA VALIDITY REGISTRY ---
         with st.expander("🔍 Data Validity & Measurement Registry", expanded=True):
-            st.markdown("### 📈 Variable Validity Scorecards (< 90% Score Highlighted)")
+            st.markdown("### 📈 Variable Validity Scorecards")
+            st.caption("🔴 Red Alert Scorecards indicate attribute compliance dropped below 90%.")
             
             total_records = len(filtered_df)
             
@@ -187,41 +188,33 @@ if df is not None:
             else:
                 valid_warehouse, warehouse_pct = 0, 0
 
-            # --- HELPER FUNCTION FOR DYNAMIC ALERTS UNDER 90% ---
-            def render_scorecard(label, score):
-                bg_color = "#ffebee" if score < 90 else "#f0f2f6"
-                text_color = "#c62828" if score < 90 else "#31333F"
-                border_color = "#ffb74d" if score < 90 else "#e0e0e0"
-                warning_icon = "⚠️ " if score < 90 else ""
-                
-                st.markdown(f"""
-                    <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; 
-                                border: 1px solid {border_color}; margin-bottom: 10px;">
-                        <p style="margin: 0; font-size: 14px; color: #555555; font-weight: 500;">{label}</p>
-                        <h3 style="margin: 0; color: {text_color}; font-size: 22px;">{warning_icon}{score:.1f}%</h3>
-                    </div>
-                """, unsafe_html=True)
+            # --- NATIVE STREAMLIT CONDITIONAL SCORECARD GENERATOR ---
+            def render_native_card(label, score):
+                if score < 90:
+                    st.error(f"⚠️ **{label}** \n## {score:.1f}%")
+                else:
+                    st.info(f"**{label}** \n## {score:.1f}%")
 
-            # --- RENDER CONDITIONAL SCORECARD COLUMNS (GRID OF 4 COLUMNS) ---
+            # --- RENDER SCORECARD GRID ---
             sc_col1, sc_col2, sc_col3, sc_col4 = st.columns(4)
             with sc_col1:
-                render_scorecard("CID Score", cid_pct)
-                render_scorecard("Purchase Date Score", date_pct)
-                render_scorecard("Discount Amount Score", disc_amt_pct)
-                render_scorecard("Location Score", loc_pct)
+                render_native_card("CID", cid_pct)
+                render_native_card("Purchase Date", date_pct)
+                render_native_card("Discount Amount", disc_amt_pct)
+                render_native_card("Location", loc_pct)
             with sc_col2:
-                render_scorecard("TID Score", tid_pct)
-                render_scorecard("Product Category Score", cat_pct)
-                render_scorecard("Gross Amount Score", gross_pct)
-                render_scorecard("Warehouse Block Score", warehouse_pct)
+                render_native_card("TID", tid_pct)
+                render_native_card("Product Category", cat_pct)
+                render_native_card("Gross Amount", gross_pct)
+                render_native_card("Warehouse Block", warehouse_pct)
             with sc_col3:
-                render_scorecard("Gender Score", gender_pct)
-                render_scorecard("Discount Availed Score", avail_pct)
-                render_scorecard("Net Amount Score", net_pct)
+                render_native_card("Gender", gender_pct)
+                render_native_card("Discount Availed", avail_pct)
+                render_native_card("Net Amount", net_pct)
             with sc_col4:
-                render_scorecard("Age Group Score", age_pct)
-                render_scorecard("Discount Name Score", name_pct)
-                render_scorecard("Purchase Method Score", method_pct)
+                render_native_card("Age Group", age_pct)
+                render_native_card("Discount Name", name_pct)
+                render_native_card("Purchase Method", method_pct)
 
             st.markdown("---")
             st.markdown("### 📋 Detailed Rule Log")
