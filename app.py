@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -92,8 +91,8 @@ if df is not None:
         col3.metric("Transaction Count", len(filtered_df))
 
         # --- DATA VALIDITY REGISTRY ---
-        with st.expander("🔍 Data Validity & Measurement Registry"):
-            st.markdown("This registry tracks data compliance against baseline constraints and metadata rules.")
+        with st.expander("🔍 Data Validity & Measurement Registry", expanded=True):
+            st.markdown("### 📈 Variable Validity Scorecards")
             
             total_records = len(filtered_df)
             
@@ -187,6 +186,30 @@ if df is not None:
                 warehouse_pct = (valid_warehouse / total_records) * 100 if total_records > 0 else 0
             else:
                 valid_warehouse, warehouse_pct = 0, 0
+
+            # --- RENDER SCORECARD METRIC COLUMNS (GRID OF 4 COLUMNS) ---
+            sc_col1, sc_col2, sc_col3, sc_col4 = st.columns(4)
+            with sc_col1:
+                st.metric("CID Score", f"{cid_pct:.1f}%")
+                st.metric("Purchase Date Score", f"{date_pct:.1f}%")
+                st.metric("Discount Amount Score", f"{disc_amt_pct:.1f}%")
+                st.metric("Location Score", f"{loc_pct:.1f}%")
+            with sc_col2:
+                st.metric("TID Score", f"{tid_pct:.1f}%")
+                st.metric("Product Category Score", f"{cat_pct:.1f}%")
+                st.metric("Gross Amount Score", f"{gross_pct:.1f}%")
+                st.metric("Warehouse Block Score", f"{warehouse_pct:.1f}%")
+            with sc_col3:
+                st.metric("Gender Score", f"{gender_pct:.1f}%")
+                st.metric("Discount Availed Score", f"{avail_pct:.1f}%")
+                st.metric("Net Amount Score", f"{net_pct:.1f}%")
+            with sc_col4:
+                st.metric("Age Group Score", f"{age_pct:.1f}%")
+                st.metric("Discount Name Score", f"{name_pct:.1f}%")
+                st.metric("Purchase Method Score", f"{method_pct:.1f}%")
+
+            st.markdown("---")
+            st.markdown("### 📋 Detailed Rule Log")
 
             # Compile Full Variable Registry DataFrame
             registry_data = {
