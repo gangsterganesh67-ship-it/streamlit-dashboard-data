@@ -1,8 +1,3 @@
-Got it. Since you want *every* single variable listed with its strict rule and validity tracking inside the sidebar layout too, let's update your sidebar information cards so that your UI documentation matches the expanded registry perfectly.
-
-Here is your updated complete, unified `app.py` script. It includes all 14 variable restrictions clearly listed in the sidebar info panel and expander, alongside the fully optimized and bug-free Data Validity Registry.
-
-```python
 import streamlit as st
 import pandas as pd
 import altair as alt
