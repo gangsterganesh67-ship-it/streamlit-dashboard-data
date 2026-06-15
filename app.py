@@ -92,7 +92,7 @@ if df is not None:
 
         # --- DATA VALIDITY REGISTRY ---
         with st.expander("🔍 Data Validity & Measurement Registry", expanded=True):
-            st.markdown("### 📈 Variable Validity Scorecards")
+            st.markdown("### 📈 Variable Validity Scorecards (< 90% Score Highlighted)")
             
             total_records = len(filtered_df)
             
@@ -187,26 +187,41 @@ if df is not None:
             else:
                 valid_warehouse, warehouse_pct = 0, 0
 
-            # --- RENDER SCORECARD METRIC COLUMNS (GRID OF 4 COLUMNS) ---
+            # --- HELPER FUNCTION FOR DYNAMIC ALERTS UNDER 90% ---
+            def render_scorecard(label, score):
+                bg_color = "#ffebee" if score < 90 else "#f0f2f6"
+                text_color = "#c62828" if score < 90 else "#31333F"
+                border_color = "#ffb74d" if score < 90 else "#e0e0e0"
+                warning_icon = "⚠️ " if score < 90 else ""
+                
+                st.markdown(f"""
+                    <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; 
+                                border: 1px solid {border_color}; margin-bottom: 10px;">
+                        <p style="margin: 0; font-size: 14px; color: #555555; font-weight: 500;">{label}</p>
+                        <h3 style="margin: 0; color: {text_color}; font-size: 22px;">{warning_icon}{score:.1f}%</h3>
+                    </div>
+                """, unsafe_html=True)
+
+            # --- RENDER CONDITIONAL SCORECARD COLUMNS (GRID OF 4 COLUMNS) ---
             sc_col1, sc_col2, sc_col3, sc_col4 = st.columns(4)
             with sc_col1:
-                st.metric("CID Score", f"{cid_pct:.1f}%")
-                st.metric("Purchase Date Score", f"{date_pct:.1f}%")
-                st.metric("Discount Amount Score", f"{disc_amt_pct:.1f}%")
-                st.metric("Location Score", f"{loc_pct:.1f}%")
+                render_scorecard("CID Score", cid_pct)
+                render_scorecard("Purchase Date Score", date_pct)
+                render_scorecard("Discount Amount Score", disc_amt_pct)
+                render_scorecard("Location Score", loc_pct)
             with sc_col2:
-                st.metric("TID Score", f"{tid_pct:.1f}%")
-                st.metric("Product Category Score", f"{cat_pct:.1f}%")
-                st.metric("Gross Amount Score", f"{gross_pct:.1f}%")
-                st.metric("Warehouse Block Score", f"{warehouse_pct:.1f}%")
+                render_scorecard("TID Score", tid_pct)
+                render_scorecard("Product Category Score", cat_pct)
+                render_scorecard("Gross Amount Score", gross_pct)
+                render_scorecard("Warehouse Block Score", warehouse_pct)
             with sc_col3:
-                st.metric("Gender Score", f"{gender_pct:.1f}%")
-                st.metric("Discount Availed Score", f"{avail_pct:.1f}%")
-                st.metric("Net Amount Score", f"{net_pct:.1f}%")
+                render_scorecard("Gender Score", gender_pct)
+                render_scorecard("Discount Availed Score", avail_pct)
+                render_scorecard("Net Amount Score", net_pct)
             with sc_col4:
-                st.metric("Age Group Score", f"{age_pct:.1f}%")
-                st.metric("Discount Name Score", f"{name_pct:.1f}%")
-                st.metric("Purchase Method Score", f"{method_pct:.1f}%")
+                render_scorecard("Age Group Score", age_pct)
+                render_scorecard("Discount Name Score", name_pct)
+                render_scorecard("Purchase Method Score", method_pct)
 
             st.markdown("---")
             st.markdown("### 📋 Detailed Rule Log")
