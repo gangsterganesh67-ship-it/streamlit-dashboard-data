@@ -175,6 +175,103 @@ if df is not None:
             else:
                 valid_warehouse, warehouse_pct = 0, 0
 
+           # --- DATA VALIDITY REGISTRY ---
+        with st.expander("🔍 Data Validity & Measurement Registry"):
+            st.markdown("This registry tracks data compliance against baseline constraints and metadata rules.")
+            
+            total_records = len(filtered_df)
+            
+            # --- COMPREHENSIVE VARIABLE RESTRICTIONS & VALIDATION LOGIC ---
+            
+            # 1. CID (Customer ID): Must be non-null and numeric
+            valid_cid = filtered_df['CID'].notna().sum() if 'CID' in filtered_df.columns else 0
+            cid_pct = (valid_cid / total_records) * 100 if total_records > 0 else 0
+            
+            # 2. TID (Transaction ID): Must be non-null and positive
+            valid_tid = (filtered_df['TID'] > 0).sum() if 'TID' in filtered_df.columns else 0
+            tid_pct = (valid_tid / total_records) * 100 if total_records > 0 else 0
+
+            # 3. Gender: Taxonomy compliance (Male, Female, Other, Unknown)
+            if 'Gender' in filtered_df.columns:
+                valid_gender = filtered_df['Gender'].isin(['Male', 'Female', 'Other', 'Unknown']).sum()
+                gender_pct = (valid_gender / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_gender, gender_pct = 0, 0
+
+            # 4. Age Group: Valid categorical formats (contains a hyphen or 'above')
+            if 'Age Group' in filtered_df.columns:
+                valid_age = filtered_df['Age Group'].apply(lambda x: '-' in str(x) or 'above' in str(x)).sum()
+                age_pct = (valid_age / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_age, age_pct = 0, 0
+
+            # 5. Purchase Date Integrity Validation
+            valid_dates = filtered_df['Purchase Date'].notna().sum()
+            date_pct = (valid_dates / total_records) * 100 if total_records > 0 else 0
+
+            # 6. Product Category: Standard text length > 2 characters (No missing/corrupt names)
+            if 'Product Category' in filtered_df.columns:
+                valid_cat = filtered_df['Product Category'].apply(lambda x: len(str(x)) > 2 if pd.notnull(x) else False).sum()
+                cat_pct = (valid_cat / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_cat, cat_pct = 0, 0
+
+            # 7. Discount Availed: Must be strictly boolean 'Yes' or 'No'
+            if 'Discount Availed' in filtered_df.columns:
+                valid_avail = filtered_df['Discount Availed'].isin(['Yes', 'No']).sum()
+                avail_pct = (valid_avail / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_avail, avail_pct = 0, 0
+
+            # 8. Discount Name: If Discount Availed is Yes, Name must not be blank (Parentheses fixed!)
+            if 'Discount Name' in filtered_df.columns and 'Discount Availed' in filtered_df.columns:
+                valid_name = (((filtered_df['Discount Availed'] == 'Yes') & filtered_df['Discount Name'].notna()) | (filtered_df['Discount Availed'] == 'No')).sum()
+                name_pct = (valid_name / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_name, name_pct = 0, 0
+
+            # 9. Discount Amount: Must be a non-negative numerical value (>= 0)
+            if 'Discount Amount (INR)' in filtered_df.columns:
+                valid_disc_amt = (filtered_df['Discount Amount (INR)'] >= 0).sum()
+                disc_amt_pct = (valid_disc_amt / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_disc_amt, disc_amt_pct = 0, 0
+
+            # 10. Gross Amount: Must be greater than 0
+            if 'Gross Amount' in filtered_df.columns:
+                valid_gross = (filtered_df['Gross Amount'] > 0).sum()
+                gross_pct = (valid_gross / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_gross, gross_pct = 0, 0
+
+            # 11. Net Amount Positive Validation
+            if 'Net Amount' in filtered_df.columns:
+                valid_net = (filtered_df['Net Amount'] > 0).sum()
+                net_pct = (valid_net / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_net, net_pct = 0, 0
+
+            # 12. Purchase Method: Standard transactional method strings (e.g., contains 'Card' or 'Cash')
+            if 'Purchase Method' in filtered_df.columns:
+                valid_method = filtered_df['Purchase Method'].notna().sum()
+                method_pct = (valid_method / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_method, method_pct = 0, 0
+
+            # 13. Location: String length check (Valid city names shouldn't be empty or numbers)
+            if 'Location' in filtered_df.columns:
+                valid_loc = filtered_df['Location'].apply(lambda x: str(x).isalpha() if pd.notnull(x) else False).sum()
+                loc_pct = (valid_loc / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_loc, loc_pct = 0, 0
+
+            # 14. Warehouse Block Uppercase Validation (Retained from your original code)
+            if 'Warehouse_block' in filtered_df.columns:
+                valid_warehouse = filtered_df['Warehouse_block'].apply(lambda x: str(x).isupper() if pd.notnull(x) else False).sum()
+                warehouse_pct = (valid_warehouse / total_records) * 100 if total_records > 0 else 0
+            else:
+                valid_warehouse, warehouse_pct = 0, 0
+
             # Compile Full Variable Registry DataFrame
             registry_data = {
                 "Variable / Attribute Rule": [
@@ -223,9 +320,6 @@ if df is not None:
             }
             registry_df = pd.DataFrame(registry_data)
             st.dataframe(registry_df, use_container_width=True, hide_index=True)
-
-        st.divider()
-
         # --- ALTAIR CHARTS ---
         row1_col1, row1_col2 = st.columns(2)
 
