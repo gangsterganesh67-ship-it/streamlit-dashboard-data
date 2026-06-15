@@ -174,12 +174,6 @@ if df is not None:
                 warehouse_pct = (valid_warehouse / total_records) * 100 if total_records > 0 else 0
             else:
                 valid_warehouse, warehouse_pct = 0, 0
-
-           # --- DATA VALIDITY REGISTRY ---
-        with st.expander("🔍 Data Validity & Measurement Registry"):
-            st.markdown("This registry tracks data compliance against baseline constraints and metadata rules.")
-            
-            total_records = len(filtered_df)
             
             # --- COMPREHENSIVE VARIABLE RESTRICTIONS & VALIDATION LOGIC ---
             
