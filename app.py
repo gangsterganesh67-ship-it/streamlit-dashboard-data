@@ -48,20 +48,72 @@ if df is not None:
     - **Warehouse_block:** Strictly uppercase alphabets only.
     """)
 
-    # Multi-select with hover-over help constraints
+    st.sidebar.markdown("### 🛠️ Interactive Data Filters")
+
+    # 1. Categorical Filters (Multi-Selects)
     selected_gender = st.sidebar.multiselect(
         "Gender:", 
-        options=df["Gender"].unique(), 
-        default=df["Gender"].unique(),
-        help="Constraint: Valid entries are limited to 'Male', 'Female', 'Other', or 'Unknown'."
+        options=df["Gender"].dropna().unique(), 
+        default=df["Gender"].dropna().unique()
     )
     
     selected_category = st.sidebar.multiselect(
         "Product Category:", 
-        options=df["Product Category"].unique(), 
-        default=df["Product Category"].unique(),
-        help="Constraint: Must align with the standardized product taxonomy."
+        options=df["Product Category"].dropna().unique(), 
+        default=df["Product Category"].dropna().unique()
     )
+
+    selected_age = st.sidebar.multiselect(
+        "Age Group:",
+        options=df["Age Group"].dropna().unique(),
+        default=df["Age Group"].dropna().unique()
+    )
+
+    selected_location = st.sidebar.multiselect(
+        "Location (City):",
+        options=df["Location"].dropna().unique(),
+        default=df["Location"].dropna().unique()
+    )
+
+    selected_method = st.sidebar.multiselect(
+        "Purchase Method:",
+        options=df["Purchase Method"].dropna().unique(),
+        default=df["Purchase Method"].dropna().unique()
+    )
+
+    selected_avail = st.sidebar.multiselect(
+        "Discount Availed:",
+        options=df["Discount Availed"].dropna().unique(),
+        default=df["Discount Availed"].dropna().unique()
+    )
+
+    if 'Warehouse_block' in df.columns:
+        selected_warehouse = st.sidebar.multiselect(
+            "Warehouse Block:",
+            options=df["Warehouse_block"].dropna().unique(),
+            default=df["Warehouse_block"].dropna().unique()
+        )
+
+    # 2. Temporal Date Range Filter
+    min_date = df["Purchase Date"].min().date()
+    max_date = df["Purchase Date"].max().date()
+    selected_dates = st.sidebar.date_input(
+        "Purchase Date Range:",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date
+    )
+
+    # 3. Numeric Metric Filters (Sliders)
+    min_gross, max_gross = float(df["Gross Amount"].min()), float(df["Gross Amount"].max())
+    gross_range = st.sidebar.slider("Gross Amount Range (₹):", min_gross, max_gross, (min_gross, max_gross))
+
+    min_net, max_net = float(df["Net Amount"].min()), float(df["Net Amount"].max())
+    net_range = st.sidebar.slider("Net Amount Range (₹):", min_net, max_net, (min_net, max_net))
+
+    if 'Discount Amount (INR)' in df.columns:
+        min_disc, max_disc = float(df["Discount Amount (INR)"].min()), float(df["Discount Amount (INR)"].max())
+        disc_range = st.sidebar.slider("Discount Amount Range (₹):", min_disc, max_disc, (min_disc, max_disc))
 
     # Additional metadata layout documentation
     with st.sidebar.expander("View Full Measurement Details"):
@@ -71,15 +123,40 @@ if df is not None:
         - **Strings:** Validated using format checks (`isalpha`, `isupper`, etc.).
         """)
 
-    # Apply Filters
+    # --- APPLY SIDEBAR FILTERS ---
+    # Safe date evaluation
+    if isinstance(selected_dates, tuple) and len(selected_dates) == 2:
+        start_date, end_date = pd.to_datetime(selected_dates[0]), pd.to_datetime(selected_dates[1])
+    else:
+        start_date, end_date = pd.to_datetime(min_date), pd.to_datetime(max_date)
+
     filtered_df = df[
         (df["Gender"].isin(selected_gender)) & 
-        (df["Product Category"].isin(selected_category))
+        (df["Product Category"].isin(selected_category)) &
+        (df["Age Group"].isin(selected_age)) &
+        (df["Location"].isin(selected_location)) &
+        (df["Purchase Method"].isin(selected_method)) &
+        (df["Discount Availed"].isin(selected_avail)) &
+        (df["Purchase Date"] >= start_date) &
+        (df["Purchase Date"] <= end_date) &
+        (df["Gross Amount"] >= gross_range[0]) &
+        (df["Gross Amount"] <= gross_range[1]) &
+        (df["Net Amount"] >= net_range[0]) &
+        (df["Net Amount"] <= net_range[1])
     ]
+
+    if 'Warehouse_block' in df.columns:
+        filtered_df = filtered_df[filtered_df["Warehouse_block"].isin(selected_warehouse)]
+        
+    if 'Discount Amount (INR)' in df.columns:
+        filtered_df = filtered_df[
+            (filtered_df["Discount Amount (INR)"] >= disc_range[0]) &
+            (filtered_df["Discount Amount (INR)"] <= disc_range[1])
+        ]
 
     # Handle empty filtered dataframe
     if filtered_df.empty:
-        st.warning("No data matches the selected filters. Please adjust your criteria.")
+        st.warning("No data matches the selected filters. Please adjust your criteria inside the sidebar panels.")
     else:
         # --- KPI METRICS ---
         total_sales = filtered_df["Net Amount"].sum()
