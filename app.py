@@ -1,10 +1,3 @@
-To add variable restrictions and track their validation scores without restructuring or rewriting your original code, we will update your **Data Validity & Measurement Registry** section.
-
-We will keep all your original logic, charts, and sidebar structure completely intact, but we will add explicit data quality rules for every single visible column in your dataset (`CID`, `TID`, `Gender`, `Age Group`, `Purchase Date`, `Product Category`, `Discount Availed`, `Discount Name`, `Discount Amount (INR)`, `Gross Amount`, `Net Amount`, `Purchase Method`, and `Location`).
-
-Here is your exact code, updated with specific business rules and validity tracking for every single variable:
-
-```python
 import streamlit as st
 import pandas as pd
 import altair as alt
